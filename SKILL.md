@@ -20,6 +20,7 @@ Optional pip packages by path:
 - OpenAI-compatible API items usually use `image_url` or `video_url`.
 - Qwen3-VL local preprocessing normally uses `image_patch_size=16`, `return_video_kwargs=True`, `return_video_metadata=True`, then processor `do_resize=False`.
 - Qwen2-VL/Qwen2.5-VL local preprocessing normally uses `image_patch_size=14`.
+- Qwen3-VL video preprocessing returns `(video, metadata)` pairs when `return_video_metadata=True`; split them and pass `video_metadata=...` to the processor.
 - Image controls live on visual items: `min_pixels`, `max_pixels`, or both `resized_height` and `resized_width`; read `references/qwen-vl-utils.md` before tuning budgets.
 - Video controls: use either `fps` or `nframes`, not both. `min_frames`/`max_frames` only affect the `fps` path; read `references/qwen-vl-utils.md` before tuning long videos.
 - vLLM-style OpenAI-compatible video serving may accept `extra_body={"mm_processor_kwargs": {"fps": 2, "do_sample_frames": true}}`.
@@ -45,7 +46,7 @@ Read `references/qwen-vl-utils.md` only when exact preprocessing details are nee
 
 ## Visualization
 
-- Qwen3-VL 2D grounding convention is relative `[0, 1000]` coordinates by default.
+- 2D grounding coordinate conventions differ by generation: Qwen2-VL and Qwen3-VL use relative `[0, 1000]`; Qwen2.5-VL uses absolute pixel coordinates.
 - Visualize on the original image unless the coordinates were produced on a resized image.
 - 3D grounding requires camera intrinsics from the user, dataset, or camera metadata.
 - Qwen-VL cookbook-style 3D boxes use `[x, y, z, x_size, y_size, z_size, pitch, yaw, roll]`; the script defaults to this convention.

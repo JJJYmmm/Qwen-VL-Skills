@@ -4,7 +4,15 @@ Use this only when grounding coordinates or 3D conventions are unclear.
 
 ## 2D
 
-Qwen3-VL 2D grounding commonly uses relative `[0, 1000]` coordinates:
+2D grounding coordinate conventions differ by Qwen-VL generation:
+
+| Model family | Coordinate convention |
+| --- | --- |
+| Qwen2-VL | Relative `[0, 1000]` |
+| Qwen2.5-VL | Absolute pixels |
+| Qwen3-VL | Relative `[0, 1000]` |
+
+For relative coordinates, convert to pixels with:
 
 ```python
 x_px = x / 1000 * image_width
@@ -18,7 +26,7 @@ Typical outputs:
 {"point_2d": [x, y], "label": "object"}
 ```
 
-Use `--coord-system absolute` only for datasets that already store pixel coordinates.
+Use `--coord-system relative-1000` for Qwen2-VL/Qwen3-VL style outputs, and `--coord-system absolute` for Qwen2.5-VL style outputs or datasets that already store pixel coordinates.
 
 ## 3D
 
