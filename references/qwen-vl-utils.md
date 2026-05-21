@@ -15,13 +15,13 @@ Recognized visual keys include `image`, `image_url`, and `video`.
 
 ## Version Differences
 
-| Model family | Local preprocessing | Video metadata | 2D grounding coordinates |
+| Model family | Local preprocessing | Video metadata in Transformers v5-style processors | 2D grounding coordinates |
 | --- | --- | --- | --- |
 | Qwen2-VL | Usually `image_patch_size=14` | Not required | Relative `[0, 1000]` |
-| Qwen2.5-VL | Usually `image_patch_size=14` | Not required | Absolute pixels |
-| Qwen3-VL | Usually `image_patch_size=16` | Required for processor path when requested | Relative `[0, 1000]` |
+| Qwen2.5-VL | Usually `image_patch_size=14` | Used to compute `second_per_grid_ts` from sampled FPS | Absolute pixels |
+| Qwen3-VL | Usually `image_patch_size=16` | Used to compute frame timestamps in prompts | Relative `[0, 1000]` |
 
-For Qwen3-VL local video preprocessing, call `process_vision_info(..., return_video_metadata=True)`. Returned videos are `(video, metadata)` pairs; split them before processor input and pass the metadata as `video_metadata=...`.
+For Qwen2.5-VL and Qwen3-VL local video preprocessing on Transformers v5-style processors, keep video metadata when using preprocessed videos. If `qwen-vl-utils` returns videos as `(video, metadata)` pairs, split them before processor input and pass the metadata as `video_metadata=...`.
 
 ## Dynamic Resolution
 
@@ -134,8 +134,21 @@ images, videos, video_kwargs = process_vision_info(
     messages,
     image_patch_size=14,
     return_video_kwargs=True,
+    return_video_metadata=True,
 )
-inputs = processor(text=text, images=images, videos=videos, return_tensors="pt", **video_kwargs)
+if videos is not None and videos and isinstance(videos[0], tuple):
+    videos, video_metadatas = zip(*videos)
+    videos, video_metadatas = list(videos), list(video_metadatas)
+else:
+    video_metadatas = None
+inputs = processor(
+    text=text,
+    images=images,
+    videos=videos,
+    video_metadata=video_metadatas,
+    return_tensors="pt",
+    **video_kwargs,
+)
 ```
 
 Qwen3-VL:

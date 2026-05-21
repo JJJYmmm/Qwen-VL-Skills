@@ -20,7 +20,7 @@ Optional pip packages by path:
 - OpenAI-compatible API items usually use `image_url` or `video_url`.
 - Qwen3-VL local preprocessing normally uses `image_patch_size=16`, `return_video_kwargs=True`, `return_video_metadata=True`, then processor `do_resize=False`.
 - Qwen2-VL/Qwen2.5-VL local preprocessing normally uses `image_patch_size=14`.
-- Qwen3-VL video preprocessing returns `(video, metadata)` pairs when `return_video_metadata=True`; split them and pass `video_metadata=...` to the processor.
+- In Transformers v5-style processors, Qwen2.5-VL and Qwen3-VL both use video metadata: Qwen2.5-VL derives `second_per_grid_ts`; Qwen3-VL derives frame timestamps. If `qwen-vl-utils` returns `(video, metadata)` pairs, split them and pass `video_metadata=...`.
 - Image controls live on visual items: `min_pixels`, `max_pixels`, or both `resized_height` and `resized_width`; read `references/qwen-vl-utils.md` before tuning budgets.
 - Video controls: use either `fps` or `nframes`, not both. `min_frames`/`max_frames` only affect the `fps` path; read `references/qwen-vl-utils.md` before tuning long videos.
 - vLLM-style OpenAI-compatible video serving may accept `extra_body={"mm_processor_kwargs": {"fps": 2, "do_sample_frames": true}}`.

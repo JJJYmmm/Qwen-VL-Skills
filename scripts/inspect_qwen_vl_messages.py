@@ -15,6 +15,7 @@ PATCH_SIZE_BY_MODEL = {
     "qwen2.5-vl": 14,
     "qwen3-vl": 16,
 }
+METADATA_BY_DEFAULT = {"qwen2.5-vl", "qwen3-vl"}
 
 
 def load_records(path: Path) -> list[Any]:
@@ -145,7 +146,7 @@ def main() -> int:
 
     image_patch_size = args.image_patch_size or PATCH_SIZE_BY_MODEL[args.model_family]
     if args.return_video_metadata == "auto":
-        return_video_metadata = args.model_family == "qwen3-vl"
+        return_video_metadata = args.model_family in METADATA_BY_DEFAULT
     else:
         return_video_metadata = args.return_video_metadata == "true"
 
