@@ -20,8 +20,8 @@ Optional pip packages by path:
 - OpenAI-compatible API items usually use `image_url` or `video_url`.
 - Qwen3-VL local preprocessing normally uses `image_patch_size=16`, `return_video_kwargs=True`, `return_video_metadata=True`, then processor `do_resize=False`.
 - Qwen2-VL/Qwen2.5-VL local preprocessing normally uses `image_patch_size=14`.
-- Image controls live on visual items: `min_pixels`, `max_pixels`, or both `resized_height` and `resized_width`.
-- Video controls: use either `fps` or `nframes`, not both. Optional fields include `min_frames`, `max_frames`, `video_start`, `video_end`, `min_pixels`, `max_pixels`, `total_pixels`.
+- Image controls live on visual items: `min_pixels`, `max_pixels`, or both `resized_height` and `resized_width`; read `references/qwen-vl-utils.md` before tuning budgets.
+- Video controls: use either `fps` or `nframes`, not both. `min_frames`/`max_frames` only affect the `fps` path; read `references/qwen-vl-utils.md` before tuning long videos.
 - vLLM-style OpenAI-compatible video serving may accept `extra_body={"mm_processor_kwargs": {"fps": 2, "do_sample_frames": true}}`.
 - DashScope/Bailian-style calls use the OpenAI SDK with `DASHSCOPE_API_KEY` and a compatible base URL such as `https://dashscope.aliyuncs.com/compatible-mode/v1`.
 

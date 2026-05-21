@@ -13,20 +13,98 @@ Use this only for exact local preprocessing details.
 
 Recognized visual keys include `image`, `image_url`, and `video`.
 
-## Resize
+## Dynamic Resolution
 
-`fetch_image` uses `image_patch_size * 2` as the resize factor:
+`qwen-vl-utils` resizes to multiples of `image_patch_size * 2`:
 
 - Qwen2-VL/Qwen2.5-VL: usually `14 * 2 = 28`.
 - Qwen3-VL: usually `16 * 2 = 32`.
 
-If `resized_height` and `resized_width` are present, they are rounded to this factor. Otherwise, resize is controlled by `min_pixels` and `max_pixels`.
+Choose one mode per visual item:
 
-## Video
+```json
+{"type": "image", "image": "file:///img.jpg", "min_pixels": 65536, "max_pixels": 524288}
+```
 
-Use either `fps` or `nframes`.
+```json
+{"type": "image", "image": "file:///img.jpg", "resized_height": 768, "resized_width": 1024}
+```
 
-Relevant fields: `min_frames`, `max_frames`, `video_start`, `video_end`, `min_pixels`, `max_pixels`, `total_pixels`.
+Rules:
+
+- If both `resized_height` and `resized_width` are present, they are rounded to the resize factor and used as the target size.
+- Otherwise, original image size is resized within `min_pixels` and `max_pixels` while preserving aspect ratio.
+- `min_pixels`/`max_pixels` are pixel budgets after resizing, not raw token counts.
+- Defaults are derived from token-count constants: image min is `4 * factor^2`, image max is `16384 * factor^2`.
+- `max_pixels` must be greater than or equal to `min_pixels`.
+- Very extreme aspect ratios can fail before resizing.
+
+Practical guidance:
+
+- Increase `max_pixels` for OCR, dense charts, documents, or small text.
+- Lower `max_pixels` for throughput, memory, or many-image prompts.
+- Prefer `min_pixels`/`max_pixels` for datasets with mixed aspect ratios; use explicit `resized_height`/`resized_width` only when a fixed rendered size is required.
+
+## Dynamic FPS and Frames
+
+For video files, use either `fps` or `nframes`, not both:
+
+```json
+{"type": "video", "video": "file:///clip.mp4", "fps": 2, "min_frames": 4, "max_frames": 128}
+```
+
+```json
+{"type": "video", "video": "file:///clip.mp4", "nframes": 64}
+```
+
+Frame-count rules:
+
+- `nframes` is rounded to a multiple of `2`.
+- With `fps`, sampled frames are approximately `duration_seconds * fps`.
+- `min_frames` and `max_frames` apply only when using `fps`.
+- `min_frames` is rounded up to a multiple of `2`; `max_frames` is rounded down to a multiple of `2`.
+- The final sampled frame count is clamped by `[min_frames, max_frames]` and by the source video's total frames.
+- The final frame count must be between `2` and the available source frame count.
+- Defaults are `fps=2.0`, `min_frames=4`, and `max_frames=min(768, total_frames)`.
+
+Clip-window fields:
+
+- `video_start` and `video_end` are seconds.
+- Supported video backends clamp the requested time range to the video duration.
+- Invalid ranges, such as start after end, should be treated as data errors.
+
+Frame-list inputs:
+
+- If `video` is already a list of image frames, frames are individually processed as images.
+- Odd frame counts are padded by repeating the last frame so the count is a multiple of `2`.
+- Use `sample_fps` and optionally `raw_fps` only when reconstructing metadata for a frame list.
+
+## Video Resolution Budget
+
+Video spatial resize happens after frame sampling.
+
+Per-frame defaults use the same resize factor:
+
+- frame min pixels: `128 * factor^2`
+- frame max pixels: `768 * factor^2`
+
+`total_pixels` controls the total video budget across frames. The effective per-frame `max_pixels` is limited by frame count:
+
+```text
+effective_max_pixels =
+  max(min(frame_default_max_pixels, total_pixels / nframes * 2), min_pixels * 1.05)
+```
+
+Default `total_pixels` comes from `MODEL_SEQ_LEN * factor^2 * 0.9`; `MODEL_SEQ_LEN` defaults to `128000` unless set in the environment. User-provided `max_pixels`, if present, is capped by the effective limit above. This means increasing `fps` or `nframes` can reduce per-frame resolution unless `total_pixels` is also increased.
+
+Practical guidance:
+
+- For temporal reasoning, raise `fps` or `max_frames` first.
+- For OCR or fine visual detail in video, raise `max_pixels` and possibly `total_pixels`; otherwise extra frames may make each frame smaller.
+- For long videos, cap `max_frames` and set `total_pixels` deliberately.
+- For API serving, check whether the server accepts `extra_body.mm_processor_kwargs`; local `qwen-vl-utils` fields and remote server fields are related but not always identical.
+
+## Video Backend
 
 Backend priority in `qwen-vl-utils`: `torchcodec`, then `decord`, then `torchvision`, unless `FORCE_QWENVL_VIDEO_READER` is set.
 
