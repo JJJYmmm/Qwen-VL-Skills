@@ -1,0 +1,4 @@
+interface:
+  display_name: "Qwen-VL Skills"
+  short_description: "Qwen-VL data prep and visualization"
+  default_prompt: "Use $qwen-vl-skills to prepare Qwen-VL vision data or visualize grounding output."
