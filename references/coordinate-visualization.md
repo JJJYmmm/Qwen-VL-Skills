@@ -28,13 +28,7 @@ Qwen-VL cookbook-style 3D visualization unpacks boxes as:
 {"bbox_3d": [x, y, z, x_size, y_size, z_size, pitch, yaw, roll], "label": "object"}
 ```
 
-`visualize_qwen_vl_coordinates.py` defaults to this convention:
-
-```bash
---bbox3d-angle-order pitch-yaw-roll --bbox3d-angle-unit cookbook
-```
-
-Override with `--bbox3d-angle-unit radians|degrees` or `--bbox3d-angle-order roll-pitch-yaw` only when the source data explicitly uses that convention.
+`visualize_qwen_vl_coordinates.py` follows this convention directly, including the notebook-style angle conversion used by Qwen-VL cookbook examples.
 
 3D overlays need camera intrinsics:
 

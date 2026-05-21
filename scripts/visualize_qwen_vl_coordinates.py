@@ -141,35 +141,13 @@ def rotation_matrix(pitch: float, yaw: float, roll: float) -> list[list[float]]:
     return mm(rz, mm(ry, rx))
 
 
-def convert_angle(value: float, unit: str) -> float:
-    if unit == "radians":
-        return value
-    if unit == "degrees":
-        return math.radians(value)
-    if unit == "cookbook":
-        return math.radians(value * 180.0)
-    raise ValueError(f"Unsupported angle unit: {unit}")
-
-
-def project_bbox_3d(
-    bbox: list[float],
-    camera: dict[str, float],
-    *,
-    angle_order: str,
-    angle_unit: str,
-) -> list[tuple[float, float]] | None:
+def project_bbox_3d(bbox: list[float], camera: dict[str, float]) -> list[tuple[float, float]] | None:
     if len(bbox) != 9:
         return None
-    x, y, z, sx, sy, sz, a, b, c = [float(v) for v in bbox]
-    if angle_order == "pitch-yaw-roll":
-        pitch, yaw, roll = a, b, c
-    elif angle_order == "roll-pitch-yaw":
-        roll, pitch, yaw = a, b, c
-    else:
-        raise ValueError(f"Unsupported angle order: {angle_order}")
-    pitch = convert_angle(pitch, angle_unit)
-    yaw = convert_angle(yaw, angle_unit)
-    roll = convert_angle(roll, angle_unit)
+    x, y, z, sx, sy, sz, pitch, yaw, roll = [float(v) for v in bbox]
+    pitch = math.radians(pitch * 180.0)
+    yaw = math.radians(yaw * 180.0)
+    roll = math.radians(roll * 180.0)
     hx, hy, hz = sx / 2.0, sy / 2.0, sz / 2.0
     corners = [
         [hx, hy, hz], [hx, hy, -hz], [hx, -hy, hz], [hx, -hy, -hz],
@@ -194,8 +172,6 @@ def draw_annotations(
     *,
     coord_system: str,
     camera: dict[str, float],
-    bbox3d_angle_order: str,
-    bbox3d_angle_unit: str,
 ) -> Image.Image:
     output = image.convert("RGB").copy()
     draw = ImageDraw.Draw(output)
@@ -219,12 +195,7 @@ def draw_annotations(
             draw_label(draw, (x + 8, y + 8), label, color, font)
 
         if "bbox_3d" in item:
-            points = project_bbox_3d(
-                item["bbox_3d"],
-                camera,
-                angle_order=bbox3d_angle_order,
-                angle_unit=bbox3d_angle_unit,
-            )
+            points = project_bbox_3d(item["bbox_3d"], camera)
             if points is None:
                 continue
             for a, b in EDGES_3D:
@@ -242,8 +213,6 @@ def main() -> int:
     parser.add_argument("--coord-system", choices=("relative-1000", "absolute"), default="relative-1000")
     parser.add_argument("--camera", type=Path, default=None, help="JSON with fx, fy, cx, cy for bbox_3d")
     parser.add_argument("--fov", type=float, default=60.0, help="Fallback FOV when --camera is absent")
-    parser.add_argument("--bbox3d-angle-order", choices=("pitch-yaw-roll", "roll-pitch-yaw"), default="pitch-yaw-roll")
-    parser.add_argument("--bbox3d-angle-unit", choices=("cookbook", "radians", "degrees"), default="cookbook")
     parser.add_argument("--out", required=True, type=Path)
     args = parser.parse_args()
 
@@ -255,8 +224,6 @@ def main() -> int:
         annotations,
         coord_system=args.coord_system,
         camera=camera,
-        bbox3d_angle_order=args.bbox3d_angle_order,
-        bbox3d_angle_unit=args.bbox3d_angle_unit,
     )
     output.save(args.out)
     print(f"saved {args.out}")
